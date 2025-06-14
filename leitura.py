@@ -1,6 +1,6 @@
+import sys
 from classes import Pedido, Corredor
-from collections import defaultdict
-from gerar_solucao import gerar_solucao_inicial, determinar_corredores, avaliar
+from gerar_solucao import gerar_solucao_inicial, determinar_corredores, avaliar, perturbar, busca_local
 
 # Realiza a leitura das instâncias
 def ler_instancias(path):
@@ -23,44 +23,35 @@ def ler_instancias(path):
 
         return pedidos, corredores, lb, ub
 
-# Calcula o total de unidades de pedidos (TALVEZ DÊ PARA TIRAR)
-def total_unidades(pedidos):
-    return sum(sum(p.itens.values()) for p in pedidos)
-
-# Verifica se tem corredores suficientes (TALVEZ DÊ PARA TIRAR)
-def corredores_suficientes(pedidos, corredores):
-    demanda = defaultdict(int)
-    for p in pedidos:
-        for i, q in p.itens.items():
-            demanda[i] += q
-
-    fornecimento = defaultdict(int)
-    for c in corredores:
-        for i, q in c.itens.items():
-            fornecimento[i] += q
-
-    return all(demanda[i] <= fornecimento[i] for i in demanda)
-
 # Método para fazer a busca local iterada
 def ils(pedidos, corredores, lb, ub, max_iter=100):
-
-    # Gera uma solução VIÁVEL aleatória
-    melhor_solucao, corredores_wave = gerar_solucao_inicial(pedidos, corredores, lb, ub)
-    # Calcula a função objetivo da solução gerada
-    melhor_obj = avaliar(melhor_solucao, pedidos, corredores_wave)
-
-    # Prints de teste
-    print('Melhor solução: ', melhor_solucao)
-    print('Melhor objetivo: ', melhor_obj)
+    pedidos_wave, corredores_wave = gerar_solucao_inicial(pedidos, corredores, lb, ub)
+    melhor_obj = avaliar(pedidos_wave, pedidos, corredores_wave)
+    melhor_solucao = (pedidos_wave, corredores_wave)
 
     # A partir daqui, implementar as buscas locais iteradas para obter a melhor solução de fato
-    """ for _ in range(max_iter):
-        solucao = perturbar(melhor_solucao)
-        solucao = busca_local(solucao, corredores, lb, ub)
-        obj = avaliar(solucao)
+    for _ in range(max_iter):
+        # Perturba os pedidos
+        pedidos_perturbados = perturbar(pedidos_wave, pedidos, lb, ub, 0.2)
+
+        # A partir dos pedidos perturbados, gera os corredores viáveis
+        corredores_perturbados = determinar_corredores(pedidos_perturbados, pedidos, corredores)
+        if corredores_perturbados is None:
+            continue  # ignora se não conseguiu gerar solução viável
+
+        # Aplica busca local na solução perturbada
+        pedidos_local, corredores_local = busca_local(
+            pedidos_perturbados, pedidos, corredores, lb, ub, estrategia='swap'
+        )
+
+        # Avalia a nova solução
+        obj = avaliar(pedidos_local, pedidos, corredores_local)
+
+        # Se for melhor, atualiza o melhor
         if obj > melhor_obj:
-            melhor_solucao = solucao
-            melhor_obj = obj """
+            melhor_solucao = (pedidos_local, corredores_local)
+            melhor_obj = obj
+            pedidos_wave, corredores_wave = pedidos_local, corredores_local
 
     return melhor_solucao
 
@@ -69,14 +60,24 @@ def salvar_saida(output_path, pedidos_wave, corredores_wave):
     with open(output_path, 'w') as f:
         f.write(f"{len(pedidos_wave)}\n")
         for p in pedidos_wave:
-            f.write(f"{p.id}\n")
+            f.write(f"{p}\n")
         f.write(f"{len(corredores_wave)}\n")
         for c in corredores_wave:
-            f.write(f"{c.id}\n")
+            f.write(f"{c}\n")
 
+
+if len(sys.argv) < 3:
+    print("Uso: python leitura.py <arquivo_entrada> <arquivo_saida>")
+    sys.exit(1)
+
+arquivo_instancia = sys.argv[1]
+arquivo_saida = sys.argv[2]
+
+pedidos, corredores, lb, ub = ler_instancias(arquivo_instancia)
+pedidos_wave, corredores_wave = ils(pedidos, corredores, lb, ub)
+salvar_saida('output.txt', pedidos_wave, corredores_wave)
 
 # TESTE
-pedidos, corredores, lb, ub = ler_instancias('instance_0020.txt')
-print('Total unidades: ', total_unidades(pedidos))
-print('Corredores suficientes? ', corredores_suficientes(pedidos, corredores))
-print('ILS teste: ', ils(pedidos, corredores, lb, ub))
+print('Pedidos selecionados:', pedidos_wave)
+print('Corredores selecionados:', corredores_wave)
+print('F.O.:', avaliar(pedidos_wave, pedidos, corredores_wave))
