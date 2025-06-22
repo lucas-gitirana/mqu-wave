@@ -95,8 +95,8 @@ def perturbar(pedidos_wave, pedidos, lb, ub, intensidade=0.2):
         if total + unidades_c <= ub:
             pedidos_wave_novo.append(c)
             total += unidades_c
-        if total >= lb:
-            break
+        #if total >= lb:
+        #    break
 
     # Valida se respeita LB
     if total < lb:

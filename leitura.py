@@ -75,7 +75,7 @@ arquivo_saida = sys.argv[2]
 
 pedidos, corredores, lb, ub = ler_instancias(arquivo_instancia)
 pedidos_wave, corredores_wave = ils(pedidos, corredores, lb, ub)
-salvar_saida('output.txt', pedidos_wave, corredores_wave)
+salvar_saida(arquivo_saida, pedidos_wave, corredores_wave)
 
 # TESTE
 print('Pedidos selecionados:', pedidos_wave)
