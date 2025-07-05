@@ -139,8 +139,8 @@ def perturbar(pedidos_bin, pedidos, lb, ub, intensidade=0.2):
         if total + unidades <= ub:
             pedidos_novo[c] = 1
             total += unidades
-        if total >= lb:
-            break
+        # if total >= lb:
+        #     break
 
     if total < lb: # caso não tenha ficado entre LB e UB, tenta de novo
         return perturbar(pedidos_bin, pedidos, lb, ub, intensidade)
